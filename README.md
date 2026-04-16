@@ -21,6 +21,8 @@ Na pasta `/data`, você encontrará:
 
 Embora você possa publicar sua solução em um repositório público para fins de portfólio, **a submissão oficial deve ser feita por e-mail**, conforme descrito no PDF, para garantir a **anonimidade no processo seletivo**.
 
+💻 A solução deve ser desenvolvida e entregue obrigatoriamente em Python.
+
 ⚠️ **Não inclua informações pessoais (nome, LinkedIn, GitHub, etc.) nos arquivos da solução**.
 
 ## Recomendação
