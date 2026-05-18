@@ -46,7 +46,7 @@ pip install -r requirements.txt
 streamlit run app.py
 ```
 
-O app abre em `http://localhost:8501` e está organizado em seis seções no menu lateral: Visão Geral, Dados e Target, Engenharia e Anti-leakage, Modelagem, Avaliação e Política de Crédito.
+O app abre em `localhost` e está organizado em seis seções no menu lateral: Visão Geral, Dados e Target, Engenharia e Anti-leakage, Modelagem, Avaliação e Política de Crédito.
 
 ---
 
@@ -129,7 +129,7 @@ make run       # execução do pipeline completo
 make test      # execução da suíte de testes
 ```
 
-Tempo médio de execução: 3 minutos.
+
 
 ### Artefatos gerados
 
@@ -173,10 +173,10 @@ Suíte com 15 testes cobrindo: lógica de construção do target FPD5, restriç�
 - O arquivo de submissão (`outputs/submissao_case.csv`) já está disponível no repositório e pode ser consultado sem necessidade de re-execução do pipeline.
 
 
-## Limitações conhecidas
+## Limitações que são detalhadas nos documentos
 
-- O período de teste possui baixo volume de eventos de inadimplência: 26 bads, com bad rate aproximada de 0,36%.
-- Por isso, métricas pontuais como AUC no teste devem ser interpretadas com cautela.
+
+- métricas pontuais como AUC no teste devem ser interpretadas com cautela.
 - A avaliação foi complementada com intervalos de confiança via bootstrap e análise de decis.
 - Foi observado drift entre validação e teste em variáveis importantes, reforçando a necessidade de monitoramento periódico em produção.
 - O target FPD5 mede inadimplência precoce, não perda final; por isso, o modelo também foi avaliado contra o target secundário EVER15MOB03.

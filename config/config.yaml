@@ -1,0 +1,75 @@
+project:
+  random_state: 42
+  python_version: "3.11"
+  snapshot_date: "2025-02-22"
+
+paths:
+  raw_data_dir: "data"
+  interim_dir: "data/interim"
+  processed_dir: "data/processed"
+  model_dir: "models"
+  output_dir: "outputs"
+  report_dir: "reports"
+
+files:
+  base_cadastral: "base_cadastral.parquet"
+  base_submissao: "base_submissao.parquet"
+  historico_emprestimos: "historico_emprestimos.parquet"
+  historico_parcelas: "historico_parcelas.parquet"
+  dicionario: "dicionario_dados.csv"
+  submission: "submissao_case.csv"
+
+target:
+  primary:
+    name: "FPD5"
+    dpd_threshold: 5
+    min_maturity_days: 30
+  secondary:
+    name: "EVER15MOB03"
+    dpd_threshold: 15
+    mob_months: 3
+    min_maturity_days_after_window: 30
+
+cohort:
+  status_validos_target: ["Approved"]
+  filtrar_xna: true
+  gap_max_decisao_primeiro_venc_dias: 90
+
+drop_columns:
+  - "taxa_juros_padrao"
+  - "taxa_juros_promocional"
+  - "data_liberacao"
+
+split:
+  train_start: "2020-01-01"   # D-017: descarta portfolio antigo (2017-2019) com perfil distinto
+  train_end: "2023-12-31"
+  validation_start: "2024-01-01"
+  validation_end: "2024-06-30"
+  test_start: "2024-07-01"
+
+model:
+  algorithm: "lightgbm"
+  calibrate_probabilities: true
+  calibration_method: "sigmoid"   # D-014: substitui isotonic, resolve colapso de decis
+  lightgbm_params:
+    objective: "binary"
+    metric: "binary_logloss"
+    learning_rate: 0.03
+    num_leaves: 15
+    max_depth: 5
+    min_data_in_leaf: 500
+    feature_fraction: 0.7
+    bagging_fraction: 0.7
+    bagging_freq: 5
+    reg_alpha: 0.5
+    reg_lambda: 1.0
+    n_estimators: 1000
+    verbose: -1
+
+policy:
+  strategy: "validation_deciles"
+  lgd_assumption: 0.60
+  threshold_low: 0.05
+  threshold_medium: 0.10
+  threshold_high: 0.20
+  comprometimento_renda_max: 0.40

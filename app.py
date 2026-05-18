@@ -84,13 +84,13 @@ if secao == "Visão Geral":
         A inadimplência foi definida como **FPD5**, isto é, atraso superior a 5 dias na primeira parcela
         do contrato. Essa definição foi escolhida por ser observável nas bases fornecidas, adequada ao
         momento de decisão de crédito e mais estável do que FPD1. O target FPD5 apresentou
-        **3.569 bads em 107.130 contratos elegíveis**, com bad rate de **3,33%**.
+        **1.190 bads em 105.092 contratos elegíveis**, com bad rate de **1,13%**.
 
         O modelo final utiliza **LightGBM com calibração sigmoid/Platt**, treinado em janela temporal
-        2020–2023 e validado em períodos futuros. Na validação 2024 H1, o modelo atingiu **AUC próxima
-        de 0,710**; no teste 2024 H2, **AUC próxima de 0,634**. Apesar da baixa quantidade de bads no
-        teste, os decis de maior risco concentram parte relevante da inadimplência: os **20% clientes
-        mais arriscados capturam 42% dos bads**.
+        2020–2023 (62.181 contratos, 1,0% bad rate) e validado em períodos futuros. Na validação 2024 H1,
+        o modelo atingiu **AUC de 0,710 com KS de 0,378**; no teste 2024 H2, **AUC de 0,634 com KS de 0,290**.
+        Apesar da baixa quantidade de bads no teste (26 eventos), os decis de maior risco concentram parte
+        relevante da inadimplência: os **20% clientes mais arriscados capturam 42% dos bads**.
 
         A política de crédito divide os clientes em **quatro faixas de risco** com base nos quantis da
         PD calibrada: verde para aprovação automática, amarela para aprovação com ajuste, laranja para
@@ -219,13 +219,14 @@ elif secao == "Dados e Target":
 
         | Definição | Contratos | Bad rate | Bads |
         |---|---|---|---|
-        | FPD1 | 107.135 | 6,26% | 6.712 — sensível demais (ruído operacional) |
-        | **FPD5** | **107.130** | **3,33%** | **3.569 — escolhido** |
-        | EVER15MOB03 | 107.057 | 2,26% | 2.421 — target secundário (validação cruzada) |
-        | EVER30MOB03 | 106.763 | 0,43% | 457 — poucos bads para modelagem estável |
+        | FPD1 | 105.092 | 1,13% | 1.190 — sensível demais (ruído operacional) |
+        | **FPD5** | **105.092** | **1,13%** | **1.190 — escolhido** |
+        | EVER15MOB03 | 102.162 | 1,60% | 1.638 — target secundário (validação cruzada) |
+        | EVER30MOB03 | ~ | ~ | ~ — poucos bads para modelagem estável |
 
         **Target secundário (EVER15MOB03)**: o modelo treinado em FPD5 avaliado contra EVER15MOB03
-        na validação entrega AUC 0,716 / KS 0,410 — evidência de captura de padrões reais de risco.
+        na validação entrega AUC 0,7159 / KS 0,4100 — evidência de captura de padrões reais de risco,
+        não apenas comportamento específico da primeira parcela.
 
         **Janelas de treino/validação/teste** (split temporal estrito):
         """
@@ -624,3 +625,75 @@ elif secao == "Política de Crédito":
             df_filtrado = dec[dec["faixa_risco"] == faixa_sel]
         st.dataframe(df_filtrado.head(100), hide_index=True, use_container_width=True)
         st.caption(f"{len(df_filtrado):,} clientes nessa faixa.")
+
+    st.divider()
+    st.subheader("Resumo das Decisões Técnicas")
+
+    with st.expander("Decisões Chave e Trade-offs"):
+        st.markdown(
+            """
+            **D-008 | Modelo Único Segmentado**
+            Modelo único com flags de tipo de contrato (`flag_revolving`, `flag_consumer`) em vez de modelos
+            separados. O LightGBM aprende splits automáticos por segmento, economizando custo operacional
+            sem perder discriminação.
+
+            ---
+
+            **D-010 | Thresholds Adaptativos**
+            Thresholds da política derivados de **quantis empíricos da PD na validação** (q70, q90, q97),
+            não valores absolutos. Com PD média de 0,55%, thresholds fixos (5%, 10%) seriam inoperantes —
+            99% dos clientes cairiam em "verde". Quantis adaptam à distribuição real e são parametrizáveis
+            pelo apetite de risco do banco.
+
+            ---
+
+            **D-014 | Calibração Sigmoid vs Isotônica**
+            Escolhi **Platt scaling** porque isotônica colapsava os 10 decis em apenas 7 scores únicos
+            (colapso de discriminação). Com poucos bads na validação (~71), isotônica mapeia regiões inteiras
+            para o mesmo valor. O trade-off foi mínimo: queda de 0,003 no AUC, ganho de ranqueamento
+            granular que a política precisa para operar.
+
+            ---
+
+            **D-015 | Aceitação do Gap Val/Teste com Diagnóstico**
+            O gap entre validação (AUC 0,71) e teste (AUC 0,63) foi investigado profundamente.
+            Conclusão: ICs bootstrap se sobrepõem (estatisticamente não significativo) e 33/73 features
+            mostram drift estrutural real (p<0,001). Aceitar gap não é resignação — é diagnóstico que
+            vai virar requisito de monitoramento em produção.
+
+            ---
+
+            **D-016 | Transparência Estatística**
+            Toda métrica de performance é reportada com **IC bootstrap 95%**. Com apenas 26 bads no teste,
+            o IC é [0,51; 0,75], mostrando que qualquer valor nesse range é compatível com os dados.
+            Ocultar a incerteza leva a decisões precipitadas — o tamanho do IC importa mais que o ponto central.
+
+            ---
+
+            **D-017 | Janela de Treino 2020–2023**
+            Reduzir de 2017–2023 para 2020–2023 (descartando portfólio pré-COVID). Bootstrap pareado
+            (2.000 reamostras) mostrou P(2020–2023 superior) = 88% no test AUC. Descartar 27% do volume
+            vale pela aderência ao portfólio atual.
+            """
+        )
+
+    st.markdown(
+        """
+        ---
+
+        ## 📊 Modelo em Produção
+
+        A solução está **pronta para deployment**:
+        - Modelo serializado (`models/lightgbm.joblib`)
+        - Política de crédito com 4 faixas de risco
+        - Scoring gerado para 40.000 clientes (`outputs/submissao_case.csv`)
+        - Métricas calibradas com ICs bootstrap
+        - Tratamento explícito de cold-start e regras paralelas
+
+        **Próximos passos em produção**:
+        1. Integrar scoring ao sistema de concessão
+        2. Implementar monitoramento mensal de **drift de features**
+        3. Avaliar performance em 90 dias (validação em portfólio novo)
+        4. Recalibrar policy se drift > 10% em features críticas
+        """
+    )
