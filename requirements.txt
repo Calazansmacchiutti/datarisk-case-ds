@@ -1,0 +1,27 @@
+# Núcleo de dados / leitura de parquet
+pandas==3.0.3
+numpy==2.4.4
+pyarrow==24.0.0
+python-dateutil==2.9.0.post0
+PyYAML==6.0.3
+
+# Modelagem (notebooks: Model 1, solucao_credito, exploracao_decisoes)
+scikit-learn==1.8.0
+lightgbm==4.6.0
+scipy==1.17.1
+joblib==1.5.3
+
+# Visualização (notebooks)
+matplotlib==3.10.9
+seaborn==0.13.2
+
+# Streamlit (app.py)
+streamlit==1.57.0
+altair==6.1.0
+
+# Notebooks
+ipykernel==7.2.0
+tqdm==4.66.4
+
+# Testes
+pytest==8.3.2
